@@ -281,7 +281,7 @@ int WavePlayerInit(uint32_t AudioFreq)
   Mems_Config();
   
   /* EXTI configue to detect interrupts on Z axis click and on Y axis high event */
-  EXTILine_Config();  
+  //EXTILine_Config();  
     
   /* Initialize I2S interface */  
   EVAL_AUDIO_SetAudioInterface(AUDIO_INTERFACE_I2S);

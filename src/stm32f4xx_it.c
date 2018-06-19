@@ -175,7 +175,7 @@ void SysTick_Handler(void)
 void EXTI1_IRQHandler(void)
 {
   /* Check the clic on the accelerometer to Pause/Resume Playing */
-  if(EXTI_GetITStatus(EXTI_Line1) != RESET)
+  /*if(EXTI_GetITStatus(EXTI_Line1) != RESET)
   {
     if( Count==1)
     {
@@ -186,10 +186,10 @@ void EXTI1_IRQHandler(void)
     {
       PauseResumeStatus = 0;
       Count = 1;
-    }
+    }*/
     /* Clear the EXTI line 1 pending bit */
     EXTI_ClearITPendingBit(EXTI_Line1);
-  }
+  //}
 }
 
 /**
