@@ -122,18 +122,29 @@ void WavePlayBack(uint32_t AudioFreq)
   LED_Toggle = 6;
   
   /* Infinite loop */
+  int khoa = 1;
   while(1)
   { 
     /* check on the repeate status */
     if (RepeatState == 0)
     {
-      //PauseResumeStatus = 1;
+      if (STM_EVAL_PBGetState(BUTTON_USER) && (khoa == 1))
+      {
+        WaveplayerCtrlVolume(50);
+        khoa = 0;
+      }
+      else if (STM_EVAL_PBGetState(BUTTON_USER) && (khoa == 0))
+        {
+        WaveplayerCtrlVolume(80);
+        khoa = 1;
+      }
       if (PauseResumeStatus == 0)
       {
         /* LED Blue Stop Toggling */
         LED_Toggle = 0;
         /* Pause playing */
         WavePlayerPauseResume(PauseResumeStatus);
+        khoa = 0;
         PauseResumeStatus = 2;
       }
       else if (PauseResumeStatus == 1)
@@ -142,9 +153,17 @@ void WavePlayBack(uint32_t AudioFreq)
         LED_Toggle = 6;
         /* Resume playing */
         WavePlayerPauseResume(PauseResumeStatus);
+        khoa = 1;
         PauseResumeStatus = 2;
       }
     }
+    /*else if (RepeatState == 1)
+    {
+      LED_Toggle = 4;
+      while (1)
+      {
+      }
+    }*/
     else
     {
       /* Stop playing */
