@@ -20,7 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "tm_stm32f4_i2c.h"
 /** @addtogroup STM32F4-Discovery_Audio_Player_Recorder
   * @{
   */ 
@@ -49,6 +49,7 @@ static void TIM_LED_Config(void);
 */
 int main(void)
 { 
+  volatile unsigned char connected = 0;
   /* Initialize LEDS */
   STM_EVAL_LEDInit(LED3);
   STM_EVAL_LEDInit(LED4);
@@ -64,7 +65,8 @@ int main(void)
   
   /* Configure TIM4 Peripheral to manage LEDs lighting */
   TIM_LED_Config();
-  
+  TM_I2C_Init(I2C1, TM_I2C_PinsPack_1, 100000);
+  connected = TM_I2C_IsDeviceConnected(I2C1, 0x42);
   /* Initialize the repeat status */
   RepeatState = 0;
   LED_Toggle = 7;
