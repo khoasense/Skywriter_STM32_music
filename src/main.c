@@ -75,8 +75,7 @@ int main(void)
   LED_Toggle = 7;
   
 #if defined MEDIA_IntFLASH
-  
-  WavePlayBack(I2S_AudioFreq_48k); 
+  WavePlayBack(I2S_AudioFreq_44k); 
   while (1)
   {
 

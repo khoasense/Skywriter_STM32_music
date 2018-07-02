@@ -34,12 +34,12 @@
 extern uint16_t AUDIO_SAMPLE[];
 /* Audio file size and start address are defined here since the audio file is 
     stored in Flash memory as a constant table of 16-bit data */
-#define AUDIO_FILE_SZE          990000
-#define AUIDO_START_ADDRESS     58 /* Offset relative to audio file header size */
+#define AUDIO_FILE_SZE          350000
+#define AUIDO_START_ADDRESS     0 /* Offset relative to audio file header size */
 #endif
 
 #define MAXIMUM_VOLUME  (80)
-#define MINIMUM_VOLUME  (30)
+#define MINIMUM_VOLUME  (10)
 #define VOLUME_RANGE    (MAXIMUM_VOLUME - MINIMUM_VOLUME)
 #define VOLUME_SCALER   (65535/VOLUME_RANGE)
 
@@ -124,42 +124,69 @@ void WavePlayBack(uint32_t AudioFreq)
   WavePlayerInit(AudioFreq);
   
   /* Play on */
-  AudioFlashPlay((uint16_t*)(AUDIO_SAMPLE + AUIDO_START_ADDRESS),AUDIO_FILE_SZE,AUIDO_START_ADDRESS);
+  volatile uint8_t firstTime = 1;
+while(1)
+{
+  currentPacket = skywriter_poll();
+ if ((currentPacket & PACKET_AIRWHEEL))
+ {  
+   LED_Toggle = 0;
+   if (firstTime)
+   {
+    AudioFlashPlay((uint16_t*)(AUDIO_SAMPLE + AUIDO_START_ADDRESS),AUDIO_FILE_SZE,AUIDO_START_ADDRESS);
+    firstTime = 0;
+   }
+   else
+   {
+     WavePlayerPauseResume(1);
+   }
+
   
   /* LED Blue Start toggling */
-  LED_Toggle = 6;
-  
+  //LED_Toggle = 6;
+ 
   /* Infinite loop */
   while(1)
-  { 
-    currentPacket = skywriter_poll();
+ {  
+   currentPacket = skywriter_poll();
+   if (currentPacket & PACKET_TOUCH)
+   {
+     WavePlayerPauseResume(0);
+     LED_Toggle = 4;
+     break;
+   }
+    /*currentPacket = skywriter_poll();
     getXYZ(&currX, &currY, &currZ);
     currZ = (currZ/VOLUME_SCALER) + MINIMUM_VOLUME;
-    if ((lastZ != currZ) && (currentPacket = PACKET_XYZ))
+    /*if (currentPacket & PACKET_TOUCH)
     {
-      WaveplayerCtrlVolume(currZ);
+      AudioFlashPlay((uint16_t*)(AUDIO_SAMPLE + AUIDO_START_ADDRESS),AUDIO_FILE_SZE,AUIDO_START_ADDRESS);
+    }*/
+    /*if ((lastZ != currZ) && (currentPacket = PACKET_XYZ))
+    {
+      WaveplayerCtrlVolume(MAXIMUM_VOLUME - currZ);
       lastZ = currZ;
-    }
+    }*/
     /* check on the repeate status */
-    if (RepeatState == 0)
+    /*if (RepeatState == 0)
     {
       if (PauseResumeStatus == 0)
       {
-        /* LED Blue Stop Toggling */
+        // LED Blue Stop Toggling 
         LED_Toggle = 0;
-        /* Pause playing */
+        // Pause playing 
         WavePlayerPauseResume(PauseResumeStatus);
         PauseResumeStatus = 2;
       }
       else if (PauseResumeStatus == 1)
       {
-        /* LED Blue Toggling */
+        // LED Blue Toggling 
         LED_Toggle = 6;
-        /* Resume playing */
+        // Resume playing 
         WavePlayerPauseResume(PauseResumeStatus);
         PauseResumeStatus = 2;
       }
-    }
+    }*/
     /*else if (RepeatState == 1)
     {
       LED_Toggle = 4;
@@ -167,15 +194,19 @@ void WavePlayBack(uint32_t AudioFreq)
       {
       }
     }*/
-    else
+    /*else
     {
-      /* Stop playing */
+      // Stop playing 
       WavePlayerStop();
-      /* Green LED toggling */
+      // Green LED toggling 
       LED_Toggle = 4;
-    }
+    }*/
   }
-  
+ }
+ else {
+   LED_Toggle = 4;
+ }
+}
 #elif defined MEDIA_USB_KEY
   /* Initialize wave player (Codec, DMA, I2C) */
   WavePlayerInit(AudioFreq);
