@@ -2495,6 +2495,9 @@
             <name>$PROJ_DIR$\..\src\main.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\src\skywriter_play.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\src\stm32f4xx_it.c</name>
         </file>
         <file>

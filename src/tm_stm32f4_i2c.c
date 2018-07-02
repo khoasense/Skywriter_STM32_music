@@ -143,9 +143,9 @@ void TM_I2C_ReadMultiNoRegister(I2C_TypeDef* I2Cx, uint8_t address, uint8_t* dat
 	while (count--) {
 		if (!count) {
 			/* Last byte */
-			*data = TM_I2C_ReadNack(I2Cx);
+			data[31] = TM_I2C_ReadNack(I2Cx);
 		} else {
-			*data = TM_I2C_ReadAck(I2Cx);
+			data[31 - count] = TM_I2C_ReadAck(I2Cx);
 		}
 	}
 }
