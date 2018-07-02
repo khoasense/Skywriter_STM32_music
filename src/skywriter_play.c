@@ -18,6 +18,7 @@ I2C_InitTypeDef hi2c1;
 */
 unsigned char buffer[32];
 unsigned int x,y,z;
+packetType_t thisPacketType;
 unsigned char last_gesture, last_touch;
 int rotation;
 int lastrotation;
@@ -102,7 +103,7 @@ void skywriter_init(uint16_t xferPin, uint16_t resetPin)
   xfer_pin = xferPin;
   reset_pin = resetPin;
   //MX_I2C1_Init();
-  TM_I2C_Init(I2C1, TM_I2C_PinsPack_1, 200000);
+  TM_I2C_Init(I2C2, TM_I2C_PinsPack_1, 100000);
   /* USER CODE BEGIN 2 */
   Xfer_output.GPIO_Pin = xfer_pin;
   Xfer_output.GPIO_Mode = GPIO_Mode_OUT;
@@ -126,21 +127,21 @@ void skywriter_init(uint16_t xferPin, uint16_t resetPin)
   //HAL_GPIO_WritePin(GPIOD, reset_pin, GPIO_PIN_RESET);
   GPIO_WriteBit(GPIOD, reset_pin, Bit_RESET);
   //HAL_Delay(100);
-  skywriterDelay(1000000);
+  skywriterDelay(10000000);
   GPIO_WriteBit(GPIOD, reset_pin, Bit_SET);
   //HAL_Delay(100);
-  skywriterDelay(1000000);
+  skywriterDelay(10000000);
 }
 
 packetType_t skywriter_poll()
 {
-  packetType_t thisPacketType =  PACKET_NOTHING;
+  thisPacketType =  PACKET_NOTHING;
   if (GPIO_ReadInputDataBit(GPIOD, xfer_pin) == Bit_RESET)
   {
     GPIO_Init(GPIOD, &Xfer_output);
     GPIO_WriteBit(GPIOD, xfer_pin, Bit_RESET);
     //HAL_I2C_Master_Receive(&hi2c1,SW_ADDR<<1, buffer , 32 , 50);
-    TM_I2C_ReadMultiNoRegister(I2C1, SW_ADDR << 1, buffer, 32);
+    TM_I2C_ReadMultiNoRegister(I2C2, SW_ADDR << 1, buffer, 32);
     unsigned char size, flag, seq, ident;
     size = buffer[0];
     flag = buffer[1];

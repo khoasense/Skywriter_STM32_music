@@ -51,8 +51,6 @@ static void TIM_LED_Config(void);
 */
 int main(void)
 { 
-  volatile unsigned char connected = 0;
-  volatile packetType_t currentPacket;
   /* Initialize LEDS */
   STM_EVAL_LEDInit(LED3);
   STM_EVAL_LEDInit(LED4);
@@ -72,10 +70,6 @@ int main(void)
   //connected = TM_I2C_IsDeviceConnected(I2C1, 0x42);
   
   skywriter_init(GPIO_PIN_6, GPIO_PIN_5);
-  while (1)
-  {
-    currentPacket = skywriter_poll();
-  }
   /* Initialize the repeat status */
   RepeatState = 0;
   LED_Toggle = 7;
@@ -83,7 +77,10 @@ int main(void)
 #if defined MEDIA_IntFLASH
   
   WavePlayBack(I2S_AudioFreq_48k); 
-  while (1);
+  while (1)
+  {
+
+  }
   
 #elif defined MEDIA_USB_KEY
   

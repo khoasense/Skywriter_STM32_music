@@ -21,7 +21,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "skywriter_play.h"
 /** @addtogroup STM32F4-Discovery_Audio_Player_Recorder
 * @{
 */ 
@@ -37,6 +37,11 @@ extern uint16_t AUDIO_SAMPLE[];
 #define AUDIO_FILE_SZE          990000
 #define AUIDO_START_ADDRESS     58 /* Offset relative to audio file header size */
 #endif
+
+#define MAXIMUM_VOLUME  (80)
+#define MINIMUM_VOLUME  (30)
+#define VOLUME_RANGE    (MAXIMUM_VOLUME - MINIMUM_VOLUME)
+#define VOLUME_SCALER   (65535/VOLUME_RANGE)
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -90,6 +95,9 @@ static void EXTILine_Config(void);
 
 void WavePlayBack(uint32_t AudioFreq)
 { 
+  unsigned int currX, currY, currZ;
+  unsigned int lastZ;
+  volatile packetType_t currentPacket;
   /* 
   Normal mode description:
   Start playing the audio file (using DMA stream) .
@@ -122,29 +130,25 @@ void WavePlayBack(uint32_t AudioFreq)
   LED_Toggle = 6;
   
   /* Infinite loop */
-  int khoa = 1;
   while(1)
   { 
+    currentPacket = skywriter_poll();
+    getXYZ(&currX, &currY, &currZ);
+    currZ = (currZ/VOLUME_SCALER) + MINIMUM_VOLUME;
+    if ((lastZ != currZ) && (currentPacket = PACKET_XYZ))
+    {
+      WaveplayerCtrlVolume(currZ);
+      lastZ = currZ;
+    }
     /* check on the repeate status */
     if (RepeatState == 0)
     {
-      if (STM_EVAL_PBGetState(BUTTON_USER) && (khoa == 1))
-      {
-        WaveplayerCtrlVolume(50);
-        khoa = 0;
-      }
-      else if (STM_EVAL_PBGetState(BUTTON_USER) && (khoa == 0))
-        {
-        WaveplayerCtrlVolume(80);
-        khoa = 1;
-      }
       if (PauseResumeStatus == 0)
       {
         /* LED Blue Stop Toggling */
         LED_Toggle = 0;
         /* Pause playing */
         WavePlayerPauseResume(PauseResumeStatus);
-        khoa = 0;
         PauseResumeStatus = 2;
       }
       else if (PauseResumeStatus == 1)
@@ -153,7 +157,6 @@ void WavePlayBack(uint32_t AudioFreq)
         LED_Toggle = 6;
         /* Resume playing */
         WavePlayerPauseResume(PauseResumeStatus);
-        khoa = 1;
         PauseResumeStatus = 2;
       }
     }
