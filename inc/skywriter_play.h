@@ -5,7 +5,7 @@
 typedef enum
 {
   PACKET_NOTHING = 0,
-  PACKET_TOUCH = 1,
+  PACKET_TOUCH = 1 << 0,
   PACKET_AIRWHEEL  = 1 << 1,
   PACKET_GESTURE =  1 << 2,
   PACKET_XYZ = 1 << 3

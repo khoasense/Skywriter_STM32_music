@@ -18,7 +18,7 @@ I2C_InitTypeDef hi2c1;
 */
 unsigned char buffer[32];
 unsigned int x,y,z;
-packetType_t thisPacketType;
+
 unsigned char last_gesture, last_touch;
 int rotation;
 int lastrotation;
@@ -135,7 +135,7 @@ void skywriter_init(uint16_t xferPin, uint16_t resetPin)
 
 packetType_t skywriter_poll()
 {
-  thisPacketType =  PACKET_NOTHING;
+  packetType_t currentPacketType =  PACKET_NOTHING;
   if (GPIO_ReadInputDataBit(GPIOD, xfer_pin) == Bit_RESET)
   {
     GPIO_Init(GPIOD, &Xfer_output);
@@ -150,7 +150,7 @@ packetType_t skywriter_poll()
     switch (ident)
     {
     case 0x91:
-      thisPacketType = handle_sensor_data(&(buffer[4]));
+      currentPacketType = handle_sensor_data(&(buffer[4]));
       break;
     case 0x15:
       //status info - unimplemented
@@ -162,12 +162,12 @@ packetType_t skywriter_poll()
     GPIO_WriteBit(GPIOD, xfer_pin, Bit_SET);
     GPIO_Init(GPIOD, &Xfer_input);
   }
-  return thisPacketType;
+  return currentPacketType;
 }
 
 packetType_t handle_sensor_data(unsigned char* data)
 {
-  packetType_t thisPacketType;
+  packetType_t thisPacketType = PACKET_NOTHING;
   if(data[SW_PAYLOAD_HDR_CONFIGMASK] & SW_DATA_XYZ && data[SW_PAYLOAD_HDR_SYSINFO] & SW_SYS_POSITION ){
     // Valid XYZ position
     x = data[SW_PAYLOAD_X+1] << 8 | data[SW_PAYLOAD_X];
@@ -183,17 +183,10 @@ packetType_t handle_sensor_data(unsigned char* data)
   }
   
   if ( data[SW_PAYLOAD_HDR_CONFIGMASK] & SW_DATA_TOUCH ){
-    // Valid touch
-    uint16_t touch_action = data[SW_PAYLOAD_TOUCH+1] << 8 | data[SW_PAYLOAD_TOUCH];
-    uint16_t comp = 1 << 14;
-    uint8_t x;
-    for(x = 0; x < 16; x++){
-      if( touch_action & comp ){
-        last_touch = x;
-        thisPacketType |= PACKET_TOUCH;
-        return thisPacketType;
-      }
-      comp = comp >> 1;
+    
+    if (!((data[SW_PAYLOAD_TOUCH+1] == 0) && (data[SW_PAYLOAD_TOUCH] == 0)))
+    {
+      thisPacketType |= PACKET_TOUCH;
     }
   }
   
