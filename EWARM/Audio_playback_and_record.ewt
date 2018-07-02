@@ -2495,10 +2495,19 @@
             <name>$PROJ_DIR$\..\src\main.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\src\skywriter_play.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\src\stm32f4xx_it.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\src\system_stm32f4xx.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\src\tm_stm32f4_gpio.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\src\tm_stm32f4_i2c.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\src\usb_bsp.c</name>
