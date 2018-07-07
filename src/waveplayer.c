@@ -128,17 +128,17 @@ void WavePlayBack(uint32_t AudioFreq)
 while(1)
 {
   currentPacket = skywriter_poll();
- if ((currentPacket & PACKET_AIRWHEEL))
+ if ((currentPacket & PACKET_TOUCH))
  {  
    LED_Toggle = 0;
    if (firstTime)
    {
-    AudioFlashPlay((uint16_t*)(AUDIO_SAMPLE + AUIDO_START_ADDRESS),AUDIO_FILE_SZE,AUIDO_START_ADDRESS);
+    AudioFlashPlay((uint16_t*)(AUDIO_SAMPLE + AUIDO_START_ADDRESS),AUDIO_FILE_SZE,AUIDO_START_ADDRESS); // start playing
     firstTime = 0;
    }
    else
    {
-     WavePlayerPauseResume(1);
+     WavePlayerPauseResume(1); // resume playing
    }
 
   
@@ -149,7 +149,14 @@ while(1)
   while(1)
  {  
    currentPacket = skywriter_poll();
-   if (currentPacket & PACKET_TOUCH)
+   getXYZ(&currX, &currY, &currZ);
+   currZ = (currZ/VOLUME_SCALER) + MINIMUM_VOLUME;
+   if ((lastZ != currZ) && (currentPacket == PACKET_XYZ))
+   {
+     WaveplayerCtrlVolume(80 - currZ);
+     lastZ = currZ;
+   }
+   if (currentPacket & PACKET_AIRWHEEL)
    {
      WavePlayerPauseResume(0);
      LED_Toggle = 4;
