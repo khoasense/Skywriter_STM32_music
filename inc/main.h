@@ -51,7 +51,7 @@
 #endif
 
 /* Uncomment this define to disable repeat option */
-//#define PLAY_REPEAT_OFF
+#define PLAY_REPEAT_OFF
 
 #if defined MEDIA_USB_KEY
   /* You can change the Wave file name as you need, but do not exceed 11 characters */

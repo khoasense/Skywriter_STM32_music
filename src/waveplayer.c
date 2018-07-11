@@ -85,6 +85,24 @@ static void EXTILine_Config(void);
  static ErrorCode WavePlayer_WaveParsing(uint32_t *FileLen);
 #endif
 
+ 
+/*
+  State machine typedefs
+*/
+typedef enum
+{
+  isStopped,
+  isPlaying
+} state_t;
+ 
+typedef enum
+{
+  waitingForEnd,
+  End
+} musicState_t;
+
+volatile musicState_t currentMusicState;
+
 /* Private functions ---------------------------------------------------------*/
 
 /**
@@ -123,18 +141,68 @@ void WavePlayBack(uint32_t AudioFreq)
   /* Initialize wave player (Codec, DMA, I2C) */
   WavePlayerInit(AudioFreq);
   
+  state_t currentPlayingState = isStopped;
+  currentMusicState = End;
+  while (1)
+  {
+    currentPacket = skywriter_poll();
+    unsigned char currentGesture = 0;
+    if (currentPacket & PACKET_GESTURE)
+    {
+      currentGesture = getGesture();
+    }
+    else
+    {
+      currentGesture = -1;
+    }
+    switch (currentPlayingState)
+    {
+      case isStopped:
+        if (currentPacket & PACKET_TOUCH)
+        //if (currentGesture == 5)
+        {
+          LED_Toggle = 4;
+          currentMusicState = waitingForEnd;
+          AudioFlashPlay((uint16_t*)(AUDIO_SAMPLE + AUIDO_START_ADDRESS),AUDIO_FILE_SZE,AUIDO_START_ADDRESS); // start playing
+          currentPlayingState = isPlaying;
+        }
+        break;
+        
+      case isPlaying:
+        //if ((currentGesture == 5) || (currentMusicState == End))
+        if ((currentPacket & PACKET_TOUCH) || (currentMusicState == End))
+        {
+          LED_Toggle = 6;
+          EVAL_AUDIO_Stop(CODEC_PDWN_SW);
+          WavePlayerInit(AudioFreq);
+          currentPlayingState = isStopped;
+        }
+        else
+        {
+          getXYZ(&currX, &currY, &currZ);
+          currZ = (currZ/VOLUME_SCALER) + MINIMUM_VOLUME;
+          if ((lastZ != currZ) && (currentPacket == PACKET_XYZ))
+          {
+            WaveplayerCtrlVolume(80 - currZ);
+            lastZ = currZ;
+          }
+        }
+        break;
+    }
+  }
+  
   /* Play on */
-  volatile uint8_t firstTime = 1;
+  //volatile uint8_t firstTime = 1;
 while(1)
 {
   currentPacket = skywriter_poll();
  if ((currentPacket & PACKET_TOUCH))
  {  
    LED_Toggle = 0;
-   if (firstTime)
+   if (1)
    {
     AudioFlashPlay((uint16_t*)(AUDIO_SAMPLE + AUIDO_START_ADDRESS),AUDIO_FILE_SZE,AUIDO_START_ADDRESS); // start playing
-    firstTime = 0;
+    //firstTime = 0;
    }
    else
    {
@@ -158,7 +226,7 @@ while(1)
    }
    if (currentPacket & PACKET_AIRWHEEL)
    {
-     WavePlayerPauseResume(0);
+     EVAL_AUDIO_Stop(CODEC_PDWN_SW);
      LED_Toggle = 4;
      break;
    }
@@ -402,7 +470,8 @@ void EVAL_AUDIO_TransferComplete_CallBack(uint32_t pBuffer, uint32_t Size)
 #if defined PLAY_REPEAT_OFF
   LED_Toggle = 4;
   RepeatState = 1;
-  EVAL_AUDIO_Stop(CODEC_PDWN_HW);
+  //EVAL_AUDIO_Stop(CODEC_PDWN_SW);
+  currentMusicState = End;
 #else
   /* Replay from the beginning */
   AudioFlashPlay((uint16_t*)(AUDIO_SAMPLE + AUIDO_START_ADDRESS),AUDIO_FILE_SZE,AUIDO_START_ADDRESS);
