@@ -406,7 +406,7 @@ int WavePlayerInit(uint32_t AudioFreq)
 { 
   
   /* MEMS Accelerometre configure to manage PAUSE, RESUME and Controle Volume operation */
-  Mems_Config();
+//  Mems_Config();
   
   /* EXTI configue to detect interrupts on Z axis click and on Y axis high event */
   //EXTILine_Config();  
