@@ -20,7 +20,7 @@
         <stlinkResetStrategy>1</stlinkResetStrategy>
     </StLinkDriver>
     <DebugChecksum>
-        <Checksum>3132256069</Checksum>
+        <Checksum>2613604892</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -113,7 +113,7 @@
         <Bp1>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\src\main.c}.0.1" 0 0 1 "" 0 "" 0</Bp1>
         <Bp2>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\src\TrueI2C.C}.41.5" 0 0 1 "" 0 "" 0</Bp2>
         <Bp3>_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\..\..\Utilities\STM32F4-Discovery\stm32f4_discovery_audio_codec.c}.588.3" 0 0 1 "" 0 "" 0</Bp3>
-        <Bp4>_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\src\main.c}.261.3" 0 0 1 "" 0 "" 0</Bp4>
+        <Bp4>_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\src\main.c}.278.3" 0 0 1 "" 0 "" 0</Bp4>
         <Count>5</Count>
     </Breakpoints2>
     <LogFile>

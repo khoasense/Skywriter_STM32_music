@@ -201,14 +201,24 @@ int main(void)
   int iplay = 0;
   float non_modulated_factor = 1.0 - modulation_intensity;
   Delay(10);
-  theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ;
+  //theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ;
   float sinOut, cosOut;
+  unsigned int x,y,z;
   unsigned long counter = 0;
   while (1)
   {
-    skywriter_poll();
     if(SPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_TXE))
     {
+      if (iplay % 3000 == 0)
+      {
+        skywriter_poll();
+        getXYZ(&x, &y, &z);
+        modulation_frequency = (z / 65);
+      }
+      //if (iplay % 20000 == 0)
+      //  getXYZ(&x, &y, &z);
+      //modulation_frequency = (int) (z / 6500) * 100;
+      theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ;
       theta += theta_increment;
       if (theta > 2*3.14)
       {
@@ -220,10 +230,11 @@ int main(void)
       iplay++;
       if (iplay == 200000)
         iplay = 0;
+        //getXYZ(&x, &y, &z);
+        //modulation_frequency = (int) (z / 6500) * 100;
     }
     else
     {
-      iplay = iplay;
     }
   }
   

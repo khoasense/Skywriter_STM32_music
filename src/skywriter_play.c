@@ -103,20 +103,20 @@ void skywriter_init(uint16_t xferPin, uint16_t resetPin)
   xfer_pin = xferPin;
   reset_pin = resetPin;
   //MX_I2C1_Init();
-  TM_I2C_Init(I2C2, TM_I2C_PinsPack_1, 100000);
+  TM_I2C_Init(I2C2, TM_I2C_PinsPack_1, 400000);
   /* USER CODE BEGIN 2 */
   Xfer_output.GPIO_Pin = xfer_pin;
   Xfer_output.GPIO_Mode = GPIO_Mode_OUT;
   Xfer_output.GPIO_PuPd = GPIO_PuPd_NOPULL;
   Xfer_output.GPIO_OType = GPIO_OType_PP;
-  Xfer_output.GPIO_Speed = GPIO_Speed_2MHz;
+  Xfer_output.GPIO_Speed = GPIO_Speed_25MHz;
   
   TM_GPIO_INT_EnableClock(GPIOD);
   Reset_output.GPIO_Pin = reset_pin;
   Reset_output.GPIO_Mode = GPIO_Mode_OUT;
   Reset_output.GPIO_PuPd = GPIO_PuPd_NOPULL;
   Reset_output.GPIO_OType = GPIO_OType_PP;
-  Reset_output.GPIO_Speed = GPIO_Speed_2MHz;
+  Reset_output.GPIO_Speed = GPIO_Speed_25MHz;
   GPIO_Init(GPIOD, &Reset_output);
   
   Xfer_input.GPIO_Pin = xfer_pin;
