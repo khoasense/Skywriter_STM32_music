@@ -150,6 +150,30 @@ void TM_I2C_ReadMultiNoRegister(I2C_TypeDef* I2Cx, uint8_t address, uint8_t* dat
 	}
 }
 
+void NB_I2C_ReadMultiNoRegister(I2C_TypeDef* I2Cx, uint8_t address, uint8_t* data)
+{
+  TM_I2C_Start(I2Cx, address, I2C_RECEIVER_MODE, I2C_ACK_ENABLE);
+}
+
+void NB_I2C_StartReadAck(I2C_TypeDef* I2Cx)
+{
+  I2Cx->CR1 |= I2C_CR1_ACK;
+}
+
+uint8_t NB_I2C_ReadAck(I2C_TypeDef* I2Cx, uint8_t * outputByte)
+{
+  if (I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_BYTE_RECEIVED))
+  {
+    *outputByte = I2Cx->DR;
+    return 1;
+  }
+  else
+  {
+    //*outputByte = I2Cx->DR;
+    return 0;
+  }
+}
+
 void TM_I2C_Write(I2C_TypeDef* I2Cx, uint8_t address, uint8_t reg, uint8_t data) {
 	TM_I2C_Start(I2Cx, address, I2C_TRANSMITTER_MODE, I2C_ACK_DISABLE);
 	TM_I2C_WriteData(I2Cx, reg);

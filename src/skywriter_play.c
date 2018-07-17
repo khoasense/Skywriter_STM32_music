@@ -133,6 +133,73 @@ void skywriter_init(uint16_t xferPin, uint16_t resetPin)
   skywriterDelay(10000000);
 }
 
+#define STATE_READY             0
+#define STATE_READING_BYTE      1
+#define STATE_READING_DONE      2
+#define NO_OF_BYTES             32
+
+volatile static uint16_t byteCount = 0;
+volatile static uint8_t state = STATE_READY;
+packetType_t NB_skywriter_poll()
+{
+  packetType_t currentPacketType =  PACKET_NOTHING;
+  uint8_t read_byte = 0;
+  switch (state)
+  {
+    case STATE_READY:
+      if (GPIO_ReadInputDataBit(GPIOD, xfer_pin) == Bit_RESET)
+      {
+        GPIO_Init(GPIOD, &Xfer_output);
+        GPIO_WriteBit(GPIOD, xfer_pin, Bit_RESET);
+        NB_I2C_ReadMultiNoRegister(I2C2, SW_ADDR << 1, buffer);
+        NB_I2C_StartReadAck(I2C2);
+        byteCount = 0;
+        state = STATE_READING_BYTE;
+      }
+      break;
+    case STATE_READING_BYTE:
+      if (byteCount < (NO_OF_BYTES - 1))
+      {
+        if (NB_I2C_ReadAck(I2C2, &read_byte))
+        {
+          buffer[byteCount] = read_byte;
+          byteCount++;
+          NB_I2C_StartReadAck(I2C2);
+        }
+      }
+      else
+      {
+        buffer[byteCount] = TM_I2C_ReadNack(I2C2);
+        state = STATE_READING_DONE;
+      }
+      break;
+    case STATE_READING_DONE:
+      unsigned char size, flag, seq, ident;
+      size = buffer[0];
+      flag = buffer[1];
+      seq = buffer[2];
+      ident = buffer[3];
+      switch (ident)
+      {
+      case 0x91:
+        currentPacketType = handle_sensor_data(&(buffer[4]));
+        break;
+      case 0x15:
+        //status info - unimplemented
+        break;
+      case 0x83:
+        //firmware data - unimplemented
+        break;
+      }
+      GPIO_WriteBit(GPIOD, xfer_pin, Bit_SET);
+      GPIO_Init(GPIOD, &Xfer_input);
+      state = STATE_READY;
+      byteCount = 0;
+      break;
+  }
+  return currentPacketType;
+}
+
 packetType_t skywriter_poll()
 {
   packetType_t currentPacketType =  PACKET_NOTHING;

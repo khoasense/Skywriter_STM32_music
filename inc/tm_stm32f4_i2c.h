@@ -383,6 +383,11 @@ void TM_I2C_WriteData(I2C_TypeDef* I2Cx, uint8_t data);
  */
 void TM_I2C_InitCustomPinsCallback(I2C_TypeDef* I2Cx, uint16_t AlternateFunction);
 
+
+void NB_I2C_ReadMultiNoRegister(I2C_TypeDef* I2Cx, uint8_t address, uint8_t* data);
+void NB_I2C_StartReadAck(I2C_TypeDef* I2Cx);
+uint8_t NB_I2C_ReadAck(I2C_TypeDef* I2Cx, uint8_t * outputByte);
+
 /**
  * @}
  */

@@ -116,7 +116,7 @@ void cs43l22_init(void){
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE);
     SPI_DeInit(SPI3);
     I2S_InitTypeDef i2s;
-    i2s.I2S_AudioFreq=I2S_AudioFreq_22k;
+    i2s.I2S_AudioFreq=I2S_AudioFreq_8k;
     i2s.I2S_MCLKOutput=I2S_MCLKOutput_Enable;
     i2s.I2S_Mode=I2S_Mode_MasterTx;
     i2s.I2S_DataFormat=I2S_DataFormat_16b;
@@ -207,14 +207,13 @@ int main(void)
   unsigned long counter = 0;
   while (1)
   {
+    if (NB_skywriter_poll() & PACKET_XYZ)
+    {
+      getXYZ(&x, &y, &z);
+      modulation_frequency = (z / 65);
+    }
     if(SPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_TXE))
     {
-      if (iplay % 3000 == 0)
-      {
-        skywriter_poll();
-        getXYZ(&x, &y, &z);
-        modulation_frequency = (z / 65);
-      }
       //if (iplay % 20000 == 0)
       //  getXYZ(&x, &y, &z);
       //modulation_frequency = (int) (z / 6500) * 100;
