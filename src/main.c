@@ -22,7 +22,10 @@
 #include "main.h"
 #include "tm_stm32f4_i2c.h"
 #include "skywriter_play.h"
-
+#include "stm32f4_discovery_audio_codec.h"
+#include "math.h"
+#define SAMPLING_FREQ           48000
+extern int16_t AUDIO_SAMPLE[];
 /** @addtogroup STM32F4-Discovery_Audio_Player_Recorder
   * @{
   */ 
@@ -38,6 +41,12 @@
 RCC_ClocksTypeDef RCC_Clocks;
 __IO uint8_t RepeatState = 0;
 __IO uint16_t CCR_Val = 16826;
+float modulation_frequency = 500.0;
+float modulation_intensity = 1;
+float signal_level = 1.5;
+float theta = 0.0f;
+float theta_increment;
+int16_t modulated_result;
 extern __IO uint8_t LED_Toggle;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -49,6 +58,118 @@ static void TIM_LED_Config(void);
   * @param  None
   * @retval None
 */
+
+void cs43l22_init(void){
+    GPIO_InitTypeDef gpio;
+
+    NVIC_InitTypeDef nvic;
+    nvic.NVIC_IRQChannel = SPI3_IRQn;
+    nvic.NVIC_IRQChannelPreemptionPriority = 0;
+    nvic.NVIC_IRQChannelSubPriority = 0;
+    nvic.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&nvic);
+
+    //CS43L22 /RESET(PD4)
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+    gpio.GPIO_Pin=GPIO_Pin_4;
+    gpio.GPIO_Mode=GPIO_Mode_OUT;
+    gpio.GPIO_OType=GPIO_OType_PP;
+    gpio.GPIO_PuPd=GPIO_PuPd_DOWN;
+    gpio.GPIO_Speed=GPIO_Speed_50MHz;
+    GPIO_Init(GPIOD, &gpio);
+
+    //CS43L22 I2C SDA(PB9) in SCL(PB6)
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
+    gpio.GPIO_Pin=GPIO_Pin_6 | GPIO_Pin_9;
+    gpio.GPIO_Mode=GPIO_Mode_AF;
+    gpio.GPIO_OType=GPIO_OType_OD;
+    gpio.GPIO_PuPd=GPIO_PuPd_NOPULL;
+    gpio.GPIO_Speed=GPIO_Speed_50MHz;
+    GPIO_Init(GPIOB, &gpio);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource6, GPIO_AF_I2C1);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_I2C1);
+
+    //CS43L22 I2S3 WS(PA4);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+    gpio.GPIO_Pin=GPIO_Pin_4;
+    gpio.GPIO_Mode=GPIO_Mode_AF;
+    gpio.GPIO_OType=GPIO_OType_PP;
+    gpio.GPIO_PuPd=GPIO_PuPd_NOPULL;
+    gpio.GPIO_Speed=GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA, &gpio);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_SPI3);
+
+    //CS43L22 I2S3 MCK(PC7), SCK(PC10), SD(PC12)
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+    gpio.GPIO_Pin=GPIO_Pin_7 | GPIO_Pin_10 | GPIO_Pin_12;
+    gpio.GPIO_Mode=GPIO_Mode_AF;
+    gpio.GPIO_OType=GPIO_OType_PP;
+    gpio.GPIO_PuPd=GPIO_PuPd_NOPULL;
+    gpio.GPIO_Speed=GPIO_Speed_50MHz;
+    GPIO_Init(GPIOC, &gpio);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource7, GPIO_AF_SPI3);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource10, GPIO_AF_SPI3);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource12, GPIO_AF_SPI3);
+
+    //I2S config
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE);
+    SPI_DeInit(SPI3);
+    I2S_InitTypeDef i2s;
+    i2s.I2S_AudioFreq=I2S_AudioFreq_44k;
+    i2s.I2S_MCLKOutput=I2S_MCLKOutput_Enable;
+    i2s.I2S_Mode=I2S_Mode_MasterTx;
+    i2s.I2S_DataFormat=I2S_DataFormat_16b;
+    i2s.I2S_Standard=I2S_Standard_Phillips;
+    i2s.I2S_CPOL=I2S_CPOL_Low;
+    I2S_Init(SPI3, &i2s);
+    I2S_Cmd(SPI3, ENABLE);
+
+    //I2C1 config
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
+    I2C_InitTypeDef i2c;
+    i2c.I2C_ClockSpeed=100000;
+    i2c.I2C_Mode=I2C_Mode_I2C;
+    i2c.I2C_Ack=I2C_Ack_Enable;
+    i2c.I2C_AcknowledgedAddress=I2C_AcknowledgedAddress_7bit;
+    i2c.I2C_DutyCycle=I2C_DutyCycle_2;
+    i2c.I2C_OwnAddress1=99;
+    I2C_Init(I2C1, &i2c);
+    I2C_Cmd(I2C1, ENABLE);
+
+    //CS43L22 config
+    //Recommended Power-up sequence (page 31)
+
+    //bring reset high
+    GPIO_SetBits(GPIOD, GPIO_Pin_4);
+
+    //wait
+    volatile uint32_t j;
+    for(j=0; j<20000000; j++);
+
+    //Required initialization settings (page 32)
+    uint8_t reg;
+    Codec_WriteRegister(0x0, 0x99);
+    Codec_WriteRegister(0x47, 0x80);
+    reg = Codec_ReadRegister(0x32);
+    Codec_WriteRegister(0x32, reg | 0x80);
+    reg = Codec_ReadRegister(0x32);
+    Codec_WriteRegister(0x32, reg & 0x7F);
+    Codec_WriteRegister(0x0, 0x00);
+
+    Codec_WriteRegister(0x02, 0x01);
+    Codec_WriteRegister(0x04, 0xAF);
+    Codec_WriteRegister(0x05, 0x80);
+    Codec_WriteRegister(0x06, 0x04);//0x07);
+    Codec_WriteRegister(0x02, 0x9E);
+
+    Codec_WriteRegister(0x0A, 0x00);
+    Codec_WriteRegister(0x0E, 0x04);
+    Codec_WriteRegister(0x27, 0x00);
+    Codec_WriteRegister(0x1F, 0x0F);
+
+    Codec_WriteRegister(0x1A, 0x7F);
+    Codec_WriteRegister(0x1B, 0x7F);
+}
 int main(void)
 { 
   /* Initialize LEDS */
@@ -75,10 +196,44 @@ int main(void)
   LED_Toggle = 7;
   
 #if defined MEDIA_IntFLASH
-  WavePlayBack(I2S_AudioFreq_44k); 
+  //WavePlayBack(I2S_AudioFreq_44k); 
+  //WavePlayerInit(I2S_AudioFreq_44k);
+  //RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE); 
+  //SPI_I2S_DeInit(CODEC_I2S);
+  //I2S_InitTypeDef I2S_InitManual;
+  //I2S_InitManual.I2S_AudioFreq = I2S_AudioFreq_44k;
+  //I2S_InitManual.I2S_Standard = I2S_Standard_Phillips;
+  //I2S_InitManual.I2S_DataFormat = I2S_DataFormat_16b;
+  //I2S_InitManual.I2S_CPOL = I2S_CPOL_Low;
+  //I2S_InitManual.I2S_Mode = I2S_Mode_MasterRx;
+  //I2S_InitManual.I2S_MCLKOutput = I2S_MCLKOutput_Enable;
+  //I2S_Init(CODEC_I2S, &I2S_InitManual);
+  //I2S_Cmd(SPI3, ENABLE);
+  cs43l22_init();
+  int iplay = 0;
+  float non_modulated_factor = 1.0 - modulation_intensity;
+  Delay(10);
   while (1)
   {
-
+    skywriter_poll();
+    if(SPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_TXE))
+    {
+      //theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ;
+      //theta += theta_increment;
+      //if (theta > 2*3.14)
+      //{
+      //    theta -= 2*3.14;
+      //}
+      //modulated_result = (((AUDIO_SAMPLE[iplay])*non_modulated_factor+ (AUDIO_SAMPLE[iplay])*modulation_intensity*sin(theta))*signal_level);
+      SPI_I2S_SendData(SPI3, AUDIO_SAMPLE[iplay]);
+      iplay++;
+      if (iplay == 200000)
+        iplay = 0;
+    }
+    else
+    {
+      iplay = iplay;
+    }
   }
   
 #elif defined MEDIA_USB_KEY
