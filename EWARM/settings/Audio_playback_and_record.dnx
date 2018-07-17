@@ -20,7 +20,7 @@
         <stlinkResetStrategy>1</stlinkResetStrategy>
     </StLinkDriver>
     <DebugChecksum>
-        <Checksum>546514432</Checksum>
+        <Checksum>3132256069</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -54,6 +54,12 @@
         <ITMportsLogFile>0</ITMportsLogFile>
         <ITMlogFile>$PROJ_DIR$\ITM.log</ITMlogFile>
     </SWOTraceHWSettings>
+    <array_types>
+        <Fmt0>uint16_t[210672]	3	0</Fmt0>
+    </array_types>
+    <watch_formats>
+        <Fmt0>{W}1:AUDIO_SAMPLE	0	3</Fmt0>
+    </watch_formats>
     <Trace2>
         <Enabled>0</Enabled>
         <ShowSource>0</ShowSource>
@@ -107,7 +113,8 @@
         <Bp1>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\src\main.c}.0.1" 0 0 1 "" 0 "" 0</Bp1>
         <Bp2>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\src\TrueI2C.C}.41.5" 0 0 1 "" 0 "" 0</Bp2>
         <Bp3>_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\..\..\Utilities\STM32F4-Discovery\stm32f4_discovery_audio_codec.c}.588.3" 0 0 1 "" 0 "" 0</Bp3>
-        <Count>4</Count>
+        <Bp4>_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\src\main.c}.261.3" 0 0 1 "" 0 "" 0</Bp4>
+        <Count>5</Count>
     </Breakpoints2>
     <LogFile>
         <LoggingEnabled>_ 0</LoggingEnabled>

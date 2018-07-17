@@ -23,8 +23,9 @@
 #include "tm_stm32f4_i2c.h"
 #include "skywriter_play.h"
 #include "stm32f4_discovery_audio_codec.h"
-#include "math.h"
-#define SAMPLING_FREQ           48000
+#include <math.h>     
+#include "arm_math.h" 
+#define SAMPLING_FREQ           (22000)
 extern int16_t AUDIO_SAMPLE[];
 /** @addtogroup STM32F4-Discovery_Audio_Player_Recorder
   * @{
@@ -41,9 +42,9 @@ extern int16_t AUDIO_SAMPLE[];
 RCC_ClocksTypeDef RCC_Clocks;
 __IO uint8_t RepeatState = 0;
 __IO uint16_t CCR_Val = 16826;
-float modulation_frequency = 500.0;
-float modulation_intensity = 1;
-float signal_level = 1.5;
+float modulation_frequency = 1000.0;
+float modulation_intensity = 1.0;
+float signal_level = 0.8;
 float theta = 0.0f;
 float theta_increment;
 int16_t modulated_result;
@@ -115,7 +116,7 @@ void cs43l22_init(void){
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE);
     SPI_DeInit(SPI3);
     I2S_InitTypeDef i2s;
-    i2s.I2S_AudioFreq=I2S_AudioFreq_44k;
+    i2s.I2S_AudioFreq=I2S_AudioFreq_22k;
     i2s.I2S_MCLKOutput=I2S_MCLKOutput_Enable;
     i2s.I2S_Mode=I2S_Mode_MasterTx;
     i2s.I2S_DataFormat=I2S_DataFormat_16b;
@@ -196,36 +197,26 @@ int main(void)
   LED_Toggle = 7;
   
 #if defined MEDIA_IntFLASH
-  //WavePlayBack(I2S_AudioFreq_44k); 
-  //WavePlayerInit(I2S_AudioFreq_44k);
-  //RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE); 
-  //SPI_I2S_DeInit(CODEC_I2S);
-  //I2S_InitTypeDef I2S_InitManual;
-  //I2S_InitManual.I2S_AudioFreq = I2S_AudioFreq_44k;
-  //I2S_InitManual.I2S_Standard = I2S_Standard_Phillips;
-  //I2S_InitManual.I2S_DataFormat = I2S_DataFormat_16b;
-  //I2S_InitManual.I2S_CPOL = I2S_CPOL_Low;
-  //I2S_InitManual.I2S_Mode = I2S_Mode_MasterRx;
-  //I2S_InitManual.I2S_MCLKOutput = I2S_MCLKOutput_Enable;
-  //I2S_Init(CODEC_I2S, &I2S_InitManual);
-  //I2S_Cmd(SPI3, ENABLE);
   cs43l22_init();
   int iplay = 0;
   float non_modulated_factor = 1.0 - modulation_intensity;
   Delay(10);
+  theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ;
+  float sinOut, cosOut;
+  unsigned long counter = 0;
   while (1)
   {
     skywriter_poll();
     if(SPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_TXE))
     {
-      //theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ;
-      //theta += theta_increment;
-      //if (theta > 2*3.14)
-      //{
-      //    theta -= 2*3.14;
-      //}
-      //modulated_result = (((AUDIO_SAMPLE[iplay])*non_modulated_factor+ (AUDIO_SAMPLE[iplay])*modulation_intensity*sin(theta))*signal_level);
-      SPI_I2S_SendData(SPI3, AUDIO_SAMPLE[iplay]);
+      theta += theta_increment;
+      if (theta > 2*3.14)
+      {
+         theta -= 2*3.14;
+      }
+      //Delay(1);
+      modulated_result = ((AUDIO_SAMPLE[iplay])*non_modulated_factor+ (AUDIO_SAMPLE[iplay])*modulation_intensity*arm_sin_f32(theta)*signal_level);
+      SPI_I2S_SendData(SPI3, modulated_result);
       iplay++;
       if (iplay == 200000)
         iplay = 0;

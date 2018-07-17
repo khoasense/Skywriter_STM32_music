@@ -2190,6 +2190,9 @@
     <group>
         <name>User</name>
         <file>
+            <name>$PROJ_DIR$\..\..\..\Libraries\CMSIS\DSP_Lib\Source\FastMathFunctions\arm_sin_f32.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\src\audio_sample.c</name>
             <excluded>
                 <configuration>MEDIA_USB_KEY</configuration>
