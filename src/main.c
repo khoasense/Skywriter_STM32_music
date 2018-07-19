@@ -47,7 +47,7 @@ float modulation_intensity = 1.0;
 float signal_level = 0.8;
 float theta = 0.0f;
 float theta_increment;
-int16_t modulated_result;
+float modulated_result;
 extern __IO uint8_t LED_Toggle;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -199,7 +199,7 @@ int main(void)
 #if defined MEDIA_IntFLASH
   cs43l22_init();
   int iplay = 0;
-  float non_modulated_factor = 1.0 - modulation_intensity;
+  float non_modulated_factor;// = 1.0 - modulation_intensity;
   Delay(10);
   //theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ;
   float sinOut, cosOut;
@@ -211,6 +211,9 @@ int main(void)
     {
       getXYZ(&x, &y, &z);
       modulation_frequency = (z / 65);
+      modulation_intensity = (x/6553.5)/10;
+      signal_level = (y/6553.5)/10;
+      non_modulated_factor = 1.0 - modulation_intensity;
     }
     if(SPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_TXE))
     {
@@ -224,10 +227,10 @@ int main(void)
          theta -= 2*3.14;
       }
       //Delay(1);
-      modulated_result = ((AUDIO_SAMPLE[iplay])*non_modulated_factor+ (AUDIO_SAMPLE[iplay])*modulation_intensity*arm_sin_f32(theta)*signal_level);
+      modulated_result = (((AUDIO_SAMPLE[iplay])*non_modulated_factor+ (AUDIO_SAMPLE[iplay])*modulation_intensity*arm_sin_f32(theta))*signal_level);
       SPI_I2S_SendData(SPI3, modulated_result);
       iplay++;
-      if (iplay == 200000)
+      if (iplay == 70000)
         iplay = 0;
         //getXYZ(&x, &y, &z);
         //modulation_frequency = (int) (z / 6500) * 100;
