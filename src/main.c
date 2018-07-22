@@ -171,6 +171,11 @@ void cs43l22_init(void){
     Codec_WriteRegister(0x1A, 0x7F);
     Codec_WriteRegister(0x1B, 0x7F);
 }
+
+#define FLIP_FLOP_TAP   (15)
+#define STATE_TOUCHED   (1)
+#define STATE_RELEASE   (2)
+
 int main(void)
 { 
   /* Initialize LEDS */
@@ -205,14 +210,42 @@ int main(void)
   float sinOut, cosOut;
   unsigned int x,y,z;
   unsigned long counter = 0;
+  unsigned int nonTouchCounter = 0;
+  unsigned char touchState = STATE_RELEASE;
+  while (1)
+  {
+    if (NB_skywriter_poll() & PACKET_TOUCH)
+    {
+      nonTouchCounter = 0;
+      if (touchState == STATE_RELEASE)
+      {
+        printf("T\n");
+        touchState = STATE_TOUCHED;
+      }
+      else
+      {
+      }
+    }
+    else if (NB_skywriter_poll() & PACKET_XYZ)
+    {
+      if (touchState == STATE_TOUCHED)
+      {
+        if (++nonTouchCounter == FLIP_FLOP_TAP)
+        {
+          //printf("R\n");
+          touchState = STATE_RELEASE;
+        }
+      }
+    }
+  }
   while (1)
   {
     if (NB_skywriter_poll() & PACKET_XYZ)
     {
       getXYZ(&x, &y, &z);
       modulation_frequency = (z / 65);
-      modulation_intensity = (x/6553.5)/10;
-      signal_level = (y/6553.5)/10;
+      modulation_intensity = ((float)x/65535.0);
+      signal_level = ((float)y/65535.0);
       non_modulated_factor = 1.0 - modulation_intensity;
     }
     if(SPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_TXE))
