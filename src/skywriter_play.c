@@ -234,7 +234,7 @@ packetType_t skywriter_poll()
 
 packetType_t handle_sensor_data(unsigned char* data)
 {
-  packetType_t thisPacketType = PACKET_NOTHING;
+  volatile packetType_t thisPacketType = PACKET_NOTHING;
   if(data[SW_PAYLOAD_HDR_CONFIGMASK] & SW_DATA_XYZ && data[SW_PAYLOAD_HDR_SYSINFO] & SW_SYS_POSITION ){
     // Valid XYZ position
     x = data[SW_PAYLOAD_X+1] << 8 | data[SW_PAYLOAD_X];
@@ -249,14 +249,22 @@ packetType_t handle_sensor_data(unsigned char* data)
     thisPacketType |= PACKET_GESTURE;
   }
   
-  if ( data[SW_PAYLOAD_HDR_CONFIGMASK] & SW_DATA_TOUCH ){
-    
-    if (!((data[SW_PAYLOAD_TOUCH+1] == 0) && (data[SW_PAYLOAD_TOUCH] == 0)))
+  if ( data[SW_PAYLOAD_HDR_CONFIGMASK] & SW_DATA_TOUCH )
+  {
+    // Valid touch
+    uint16_t touch_action = data[SW_PAYLOAD_TOUCH+1] << 8 | data[SW_PAYLOAD_TOUCH];
+    uint16_t comp = 1 << 14;
+    uint8_t x;
+    for(x = 0; x < 16; x++)
     {
-      thisPacketType |= PACKET_TOUCH;
+      if( touch_action & comp )
+      {
+        thisPacketType |= PACKET_TOUCH;
+        return thisPacketType;
+      }
+      comp = comp >> 1;
     }
   }
-  
   if( data[SW_PAYLOAD_HDR_CONFIGMASK] & SW_DATA_AIRWHEEL && data[SW_PAYLOAD_HDR_SYSINFO] & SW_SYS_AIRWHEEL ){
     
     double delta = (data[SW_PAYLOAD_AIRWHEEL] - lastrotation) / 32.0;
