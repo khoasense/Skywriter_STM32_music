@@ -173,8 +173,64 @@ void cs43l22_init(void){
 }
 
 #define FLIP_FLOP_TAP   (15)
-#define STATE_TOUCHED   (1)
-#define STATE_RELEASE   (2)
+
+typedef enum
+{
+  SW_EVT_NOTHING = 0x00;
+  SW_EVT_XYZ = 0x01;
+  SW_EVT_TOUCHED = 0x02;
+} skywriterEvent_t;
+
+typedef enum
+{
+  SW_STATE_TOUCHED = 0x01;
+  SW_STATE_RELEASED = 0x02;
+} skywriterState_t;
+
+skywriterEvent_t skywriterEventPoll()
+{
+  static skywriterState_t currentState = SW_STATE_RELEASED;
+  static uint16_t nonTouchCounter = 0;
+  skywriterEvent_t returnEvent = SW_EVT_NOTHING;
+  packetType_t currentPacketType = NB_skywriter_poll();
+  
+  if (currentPacketType & PACKET_XYZ) returnEvent |= SW_EVT_XYZ;
+  
+  switch (currentState)
+  {
+    case SW_STATE_RELEASED:
+      if (currentPacketType & PACKET_TOUCH)
+      {
+        nonTouchCounter = 0;
+        returnEvent |= SW_EVT_TOUCHED;
+        currentState = SW_STATE_TOUCHED;
+      }
+      break;
+    case SW_STATE_TOUCHED:
+      if (currentPacketType & PACKET_TOUCH)
+      {
+        nonTouchCounter = 0;
+      }
+      else if (currentPacketType & PACKET_XYZ)
+      {
+        if (++nonTouchCounter == FLIP_FLOP_TAP)
+        {
+          currentState = SW_STATE_RELEASED;
+        }
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+typedef enum
+{
+  PLAYER_STATE_PLAY = 0x00,
+  PLAYER_STATE_STOP = 0x01
+} playerState_t;
+
+#define SONG_LENGTH;
 
 int main(void)
 { 
@@ -206,70 +262,54 @@ int main(void)
   int iplay = 0;
   float non_modulated_factor;// = 1.0 - modulation_intensity;
   Delay(10);
-  //theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ;
-  float sinOut, cosOut;
   unsigned int x,y,z;
   unsigned long counter = 0;
-  unsigned int nonTouchCounter = 0;
-  unsigned char touchState = STATE_RELEASE;
+  playerState_t playerState = PLAYER_STATE_STOP;
   while (1)
   {
-    if (NB_skywriter_poll() & PACKET_TOUCH)
-    {
-      nonTouchCounter = 0;
-      if (touchState == STATE_RELEASE)
-      {
-        printf("T\n");
-        touchState = STATE_TOUCHED;
-      }
-      else
-      {
-      }
-    }
-    else if (NB_skywriter_poll() & PACKET_XYZ)
-    {
-      if (touchState == STATE_TOUCHED)
-      {
-        if (++nonTouchCounter == FLIP_FLOP_TAP)
-        {
-          //printf("R\n");
-          touchState = STATE_RELEASE;
-        }
-      }
-    }
-  }
-  while (1)
-  {
-    if (NB_skywriter_poll() & PACKET_XYZ)
+    skywriterEvent_t currentSWEvent = skywriterEventPoll();
+    if (currentSWEvent & SW_EVT_XYZ)
     {
       getXYZ(&x, &y, &z);
       modulation_frequency = (z / 65);
       modulation_intensity = ((float)x/65535.0);
       signal_level = ((float)y/65535.0);
       non_modulated_factor = 1.0 - modulation_intensity;
+      theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ      
     }
-    if(SPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_TXE))
+    switch (playerState)
     {
-      //if (iplay % 20000 == 0)
-      //  getXYZ(&x, &y, &z);
-      //modulation_frequency = (int) (z / 6500) * 100;
-      theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ;
-      theta += theta_increment;
-      if (theta > 2*3.14)
-      {
-         theta -= 2*3.14;
-      }
-      //Delay(1);
-      modulated_result = (((AUDIO_SAMPLE[iplay])*non_modulated_factor+ (AUDIO_SAMPLE[iplay])*modulation_intensity*arm_sin_f32(theta))*signal_level);
-      SPI_I2S_SendData(SPI3, modulated_result);
-      iplay++;
-      if (iplay == 70000)
-        iplay = 0;
-        //getXYZ(&x, &y, &z);
-        //modulation_frequency = (int) (z / 6500) * 100;
-    }
-    else
-    {
+      case PLAYER_STATE_STOP:
+        if (currentSWEvent & SW_EVT_TOUCHED)
+        {
+          // Play from the beginning of the song
+          iplay = 0;
+          playerState = PLAYER_STATE_PLAY;
+        }
+        break;
+      case PLAYER_STATE_PLAY:
+        if (currentSWEvent & SW_EVT_TOUCHED)
+        {
+          // Play from the beginning if touched while playing
+          iplay = 0;
+        }
+        else
+        {
+          // else send the file to continue playing
+          if(SPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_TXE))
+          {
+            theta += theta_increment;
+            {
+              theta -= 2*3.14;
+            }
+            modulated_result = (((AUDIO_SAMPLE[iplay])*non_modulated_factor+ (AUDIO_SAMPLE[iplay])*modulation_intensity*arm_sin_f32(theta))*signal_level);
+            SPI_I2S_SendData(SPI3, modulated_result);
+            if (++iplay == SONG_LENGTH)
+            {
+              playerState = PLAYER_STATE_STOP;
+            }
+          }
+        }
     }
   }
   
