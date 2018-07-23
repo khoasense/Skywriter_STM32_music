@@ -176,15 +176,15 @@ void cs43l22_init(void){
 
 typedef enum
 {
-  SW_EVT_NOTHING = 0x00;
-  SW_EVT_XYZ = 0x01;
-  SW_EVT_TOUCHED = 0x02;
+  SW_EVT_NOTHING = 0x00,
+  SW_EVT_XYZ = 0x01,
+  SW_EVT_TOUCHED = 0x02
 } skywriterEvent_t;
 
 typedef enum
 {
-  SW_STATE_TOUCHED = 0x01;
-  SW_STATE_RELEASED = 0x02;
+  SW_STATE_TOUCHED = 0x01,
+  SW_STATE_RELEASED = 0x02
 } skywriterState_t;
 
 skywriterEvent_t skywriterEventPoll()
@@ -230,7 +230,7 @@ typedef enum
   PLAYER_STATE_STOP = 0x01
 } playerState_t;
 
-#define SONG_LENGTH;
+#define SONG_LENGTH 70000
 
 int main(void)
 { 
@@ -275,7 +275,7 @@ int main(void)
       modulation_intensity = ((float)x/65535.0);
       signal_level = ((float)y/65535.0);
       non_modulated_factor = 1.0 - modulation_intensity;
-      theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ      
+      theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ;   
     }
     switch (playerState)
     {
