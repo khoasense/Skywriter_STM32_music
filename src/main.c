@@ -222,6 +222,7 @@ skywriterEvent_t skywriterEventPoll()
     default:
       break;
   }
+  return returnEvent;
 }
 
 typedef enum
