@@ -42,12 +42,12 @@ extern int16_t AUDIO_SAMPLE[];
 RCC_ClocksTypeDef RCC_Clocks;
 __IO uint8_t RepeatState = 0;
 __IO uint16_t CCR_Val = 16826;
-float modulation_frequency = 1000.0;
-float modulation_intensity = 1.0;
-float signal_level = 0.8;
-float theta = 0.0f;
-float theta_increment;
-float modulated_result;
+volatile float modulation_frequency = 1000.0;
+volatile float modulation_intensity = 1.0;
+volatile float signal_level = 0.8;
+volatile float theta = 0.0f;
+volatile float theta_increment;
+volatile float modulated_result;
 extern __IO uint8_t LED_Toggle;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -300,6 +300,7 @@ int main(void)
           if(SPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_TXE))
           {
             theta += theta_increment;
+            if (theta > 2*3.14)
             {
               theta -= 2*3.14;
             }
