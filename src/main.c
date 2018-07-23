@@ -272,9 +272,9 @@ int main(void)
     if (currentSWEvent & SW_EVT_XYZ)
     {
       getXYZ(&x, &y, &z);
-      modulation_frequency = (z / 65);
+      modulation_frequency = (y / 60);
       modulation_intensity = ((float)x/65535.0);
-      signal_level = ((float)y/65535.0);
+      signal_level = 1;//0.2 + ((float)z/65535.0);
       non_modulated_factor = 1.0 - modulation_intensity;
       theta_increment = 2*3.14*modulation_frequency/SAMPLING_FREQ;   
     }
